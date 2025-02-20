@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Розклад руху поїздів</title>
+</head>
+<body>
+    <h1>Розклад руху поїздів</h1>
+
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Поїзд</th>
+                <th>Станція відправлення</th>
+                <th>Станція прибуття</th>
+                <th>Час відправлення</th>
+                <th>Час прибуття</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in records %}
+            <tr>
+                <td>{{ record.train_name }}</td>
+                <td>{{ record.departure_station_name }}</td>
+                <td>{{ record.arrival_station_name }}</td>
+                <td>{{ record.departure_time }}</td>
+                <td>{{ record.arrival_time }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
