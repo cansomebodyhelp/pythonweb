@@ -4,10 +4,138 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Розклад руху поїздів</title>
+    <script>
+        // Функція для вмикання/вимикання режиму адміністратора
+        function toggleAdminMode() {
+            const adminSection = document.getElementById('admin-section');
+            // Перевірка поточного стану відображення: якщо 'none', то зробимо 'block', і навпаки
+            adminSection.style.display = adminSection.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Функція для видалення запису з бази даних
+        function deleteRecord(recordId) {
+            // Перевірка, чи є правильний ідентифікатор запису
+            if (!recordId) {
+                alert('Невірний ідентифікатор запису');
+                return;
+            }
+
+            // Підтвердження видалення від користувача
+            const confirmation = confirm("Ви впевнені, що хочете видалити цей запис?");
+            if (confirmation) {
+                // Відправка запиту DELETE на сервер для видалення запису
+                fetch(`/records/${recordId}/`, {
+                    method: 'DELETE',  // Метод запиту - DELETE
+                    headers: {
+                        'Content-Type': 'application/json',  // Визначаємо тип вмісту як JSON
+                    },
+                })
+                .then(response => {
+                    if (response.ok) {
+                        alert('Запис видалено');
+                        // Якщо видалення успішне, видаляємо рядок з таблиці
+                        document.getElementById(`record-${recordId}`).remove();
+                    } else {
+                        alert('Помилка при видаленні запису');
+                    }
+                })
+                .catch(error => {
+                    console.error('Помилка:', error);
+                    alert('Помилка при видаленні запису');
+                });
+            }
+        }
+
+        // Функція для обробки форми додавання поїзда (AJAX)
+        async function submitTrainForm(event) {
+            // Оскільки це форма, зупиняємо її стандартну поведінку (перезавантаження сторінки)
+            event.preventDefault();
+            const formData = new FormData(event.target);  // Отримуємо дані з форми
+
+            // Відправляємо асинхронний запит POST на сервер
+            const response = await fetch("/trains/", {
+                method: "POST",  // Метод запиту - POST
+                body: formData,  // Тіло запиту - дані форми
+            });
+
+            if (response.ok) {
+                alert("Поїзд додано успішно!");
+                event.target.reset();  // Очищаємо форму після успішної відправки
+            } else {
+                alert("Помилка при додаванні поїзда");
+            }
+        }
+
+        // Функція для обробки форми додавання станції (AJAX)
+        async function submitStationForm(event) {
+            event.preventDefault();  // Зупиняємо стандартну поведінку
+            const formData = new FormData(event.target);  // Отримуємо дані форми
+
+            const response = await fetch("/stations/", {
+                method: "POST",  // Відправляємо запит POST
+                body: formData,  // Дані форми
+            });
+
+            if (response.ok) {
+                alert("Станцію додано успішно!");
+                event.target.reset();  // Очищаємо форму після успіху
+            } else {
+                alert("Помилка при додаванні станції");
+            }
+        }
+
+        // Функція для обробки форми додавання запису розкладу (AJAX)
+        async function submitRecordForm(event) {
+            event.preventDefault();  // Зупиняємо стандартну поведінку
+            const formData = new FormData(event.target);  // Отримуємо дані форми
+
+            const response = await fetch("/records/", {
+                method: "POST",  // Відправляємо запит POST
+                body: formData,  // Дані форми
+            });
+
+            if (response.ok) {
+                alert("Запис розкладу додано успішно!");
+                event.target.reset();  // Очищаємо форму після успішної відправки
+            } else {
+                alert("Помилка при додаванні запису");
+            }
+        }
+    </script>
 </head>
 <body>
     <h1>Розклад руху поїздів</h1>
 
+    <button onclick="toggleAdminMode()">Увімкнути/вимкнути режим адміністратора</button>
+
+    <!-- Секція для адміністратора, яка прихована за замовчуванням -->
+    <div id="admin-section" style="display: none; margin-top: 20px;">
+        <h2>Додати поїзд</h2>
+        <form id="trainForm" onsubmit="submitTrainForm(event)">
+            <label>Назва поїзда: <input type="text" name="name" required></label><br>
+            <label>Тип поїзда: <input type="text" name="train_type" required></label><br>
+            <button type="submit">Додати</button>
+        </form>
+
+        <h2>Додати станцію</h2>
+        <form id="stationForm" onsubmit="submitStationForm(event)">
+            <label>Назва станції: <input type="text" name="name" required></label><br>
+            <label>Платформа: <input type="text" name="platform" required></label><br>
+            <button type="submit">Додати</button>
+        </form>
+
+        <h2>Додати запис розкладу</h2>
+        <form id="recordForm" onsubmit="submitRecordForm(event)">
+            <label>ID поїзда: <input type="number" name="train_id" required></label><br>
+            <label>ID станції відправлення: <input type="number" name="departure_station_id" required></label><br>
+            <label>ID станції прибуття: <input type="number" name="arrival_station_id" required></label><br>
+            <label>Час відправлення (HH:MM): <input type="text" name="departure_time" required></label><br>
+            <label>Час прибуття (HH:MM): <input type="text" name="arrival_time" required></label><br>
+            <button type="submit">Додати</button>
+        </form>
+    </div>
+
+    <h2>Таблиця розкладу</h2>
     <table border="1">
         <thead>
             <tr>
@@ -16,16 +144,21 @@
                 <th>Станція прибуття</th>
                 <th>Час відправлення</th>
                 <th>Час прибуття</th>
+                <th>Дії</th> <!-- Дії з записами, включаючи видалення -->
             </tr>
         </thead>
         <tbody>
             {% for record in records %}
-            <tr>
+            <tr id="record-{{ record.id }}">
                 <td>{{ record.train_name }}</td>
                 <td>{{ record.departure_station_name }}</td>
                 <td>{{ record.arrival_station_name }}</td>
                 <td>{{ record.departure_time }}</td>
                 <td>{{ record.arrival_time }}</td>
+                <td>
+                    <!-- Кнопка для видалення запису -->
+                    <button onclick="deleteRecord({{ record.id }})">Видалити</button>
+                </td>
             </tr>
             {% endfor %}
         </tbody>
