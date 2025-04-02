@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Розклад руху поїздів</title>
+    <script>
+        function toggleAdminMode() {
+            const adminSection = document.getElementById('admin-section');
+            adminSection.style.display = adminSection.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function deleteRecord(recordId) {
+            if (!recordId) {
+                alert('Невірний ідентифікатор запису');
+                return;
+            }
+
+            const confirmation = confirm("Ви впевнені, що хочете видалити цей запис?");
+            if (confirmation) {
+                fetch(`/records/${recordId}/`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(response => {
+                    if (response.ok) {
+                        alert('Запис видалено');
+                        document.getElementById(`record-${recordId}`).remove();
+                    } else {
+                        alert('Помилка при видаленні запису');
+                    }
+                })
+                .catch(error => {
+                    console.error('Помилка:', error);
+                    alert('Помилка при видаленні запису');
+                });
+            }
+        }
+
+        async function submitTrainForm(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+
+            const response = await fetch("/trains/", {
+                method: "POST",
+                body: formData,
+            });
+
+            if (response.ok) {
+                alert("Поїзд додано успішно!");
+                event.target.reset();
+                // Обновляем страницу, чтобы новые данные появились в выпадающих списках
+                window.location.reload();
+            } else {
+                alert("Помилка при додаванні поїзда");
+            }
+        }
+
+        async function submitStationForm(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+
+            const response = await fetch("/stations/", {
+                method: "POST",
+                body: formData,
+            });
+
+            if (response.ok) {
+                alert("Станцію додано успішно!");
+                event.target.reset();
+                // Обновляем страницу, чтобы новые данные появились в выпадающих списках
+                window.location.reload();
+            } else {
+                alert("Помилка при додаванні станції");
+            }
+        }
+
+        async function submitRecordForm(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+
+            const response = await fetch("/records/", {
+                method: "POST",
+                body: formData,
+            });
+
+            if (response.ok) {
+                alert("Запис розкладу додано успішно!");
+                event.target.reset();
+                // Оновлюємо сторінку для відображення нового запису
+                window.location.reload();
+            } else {
+                alert("Помилка при додаванні запису");
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Розклад руху поїздів</h1>
+
+    <button onclick="toggleAdminMode()">Увімкнути/вимкнути режим адміністратора</button>
+
+    <div id="admin-section" style="display: none; margin-top: 20px;">
+        <h2>Додати поїзд</h2>
+        <form id="trainForm" onsubmit="submitTrainForm(event)">
+            <label>Назва поїзда: <input type="text" name="name" required></label><br>
+            <label>Тип поїзда: <input type="text" name="train_type" required></label><br>
+            <button type="submit">Додати</button>
+        </form>
+
+        <h2>Додати станцію</h2>
+        <form id="stationForm" onsubmit="submitStationForm(event)">
+            <label>Назва станції: <input type="text" name="name" required></label><br>
+            <label>Платформа: <input type="text" name="platform" required></label><br>
+            <button type="submit">Додати</button>
+        </form>
+
+        <h2>Додати запис розкладу</h2>
+        <form id="recordForm" onsubmit="submitRecordForm(event)">
+            <label>Поїзд:
+                <select name="train_id" required>
+                    {% for train in trains %}
+                    <option value="{{ train.id }}">{{ train.name }}</option>
+                    {% endfor %}
+                </select>
+            </label><br>
+
+            <label>Станція відправлення:
+                <select name="departure_station_id" required>
+                    {% for station in stations %}
+                    <option value="{{ station.id }}">{{ station.name }}</option>
+                    {% endfor %}
+                </select>
+            </label><br>
+
+            <label>Станція прибуття:
+                <select name="arrival_station_id" required>
+                    {% for station in stations %}
+                    <option value="{{ station.id }}">{{ station.name }}</option>
+                    {% endfor %}
+                </select>
+            </label><br>
+
+            <label>Час відправлення (HH:MM): <input type="text" name="departure_time" required></label><br>
+            <label>Час прибуття (HH:MM): <input type="text" name="arrival_time" required></label><br>
+            <button type="submit">Додати</button>
+        </form>
+    </div>
+
+    <h2>Таблиця розкладу</h2>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Поїзд</th>
+                <th>Станція відправлення</th>
+                <th>Станція прибуття</th>
+                <th>Час відправлення</th>
+                <th>Час прибуття</th>
+                <th>Дії</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in records %}
+            <tr id="record-{{ record.id }}">
+                <td>{{ record.train_name }}</td>
+                <td>{{ record.departure_station_name }}</td>
+                <td>{{ record.arrival_station_name }}</td>
+                <td>{{ record.departure_time }}</td>
+                <td>{{ record.arrival_time }}</td>
+                <td>
+                    <button onclick="deleteRecord('{{ record.id }}')">Видалити</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
